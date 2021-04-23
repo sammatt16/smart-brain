@@ -7,6 +7,8 @@ import Register from './components/Register/Register';
 import Logo from './components/Logo/Logo';
 import ImageLinkForm from './components/ImageLinkForm/ImageLinkForm';
 import Rank from './components/Rank/Rank';
+import Modal from  './components/Modal/Modal';
+import Profile from './components/Profile/Profile'
 import './App.css';
 
 const particlesOptions = {
@@ -27,13 +29,16 @@ const initialState = {
   imageUrl: '',
   boxes: [],
   route: 'signin',
-  isSignedIn: false,
+  isSignedIn: true,
+  isProfileOpen: false,
   user: {
     id: '',
     name: '',
     email: '',
     entries: 0,
-    joined: ''
+    joined: '',
+    pet: '',
+    age: '',
   }
 }
 
@@ -41,6 +46,26 @@ class App extends Component {
   constructor() {
     super();
     this.state = initialState;
+  }
+
+  componentDidMount() {
+    const token = window.sessionStorage.getItem('token');
+    if (token){
+      fetch('http://localhost:3000/signin', {
+        method: 'post',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token
+        }
+      })
+      .then(resp => resp.json())
+      .then(data => {
+        if (data && data.id){
+          console.log('success we need to get user profile')
+        }
+      })
+      .catch(console.log)
+    }
   }
 
   loadUser = (data) => {
@@ -109,21 +134,39 @@ class App extends Component {
 
   onRouteChange = (route) => {
     if (route === 'signout') {
-      this.setState(initialState)
+      return this.setState(initialState)
     } else if (route === 'home') {
       this.setState({isSignedIn: true})
     }
     this.setState({route: route});
   }
 
+  toggleModal = () => {
+    this.setState(prevState => ({
+      ...prevState,
+      isProfileOpen: !prevState.isProfileOpen
+    }))
+  }
+
   render() {
-    const { isSignedIn, imageUrl, route, boxes } = this.state;
+    const { isSignedIn, imageUrl, route, boxes, isProfileOpen, user } = this.state;
     return (
       <div className="App">
          <Particles className='particles'
           params={particlesOptions}
         />
-        <Navigation isSignedIn={isSignedIn} onRouteChange={this.onRouteChange} />
+        <Navigation isSignedIn={isSignedIn} onRouteChange={this.onRouteChange} 
+        toggleModal={this.toggleModal}/>
+        { isProfileOpen && 
+          <Modal>
+            <Profile 
+              isProfileOpen={isProfileOpen} 
+              toggleModal={this.toggleModal}
+              loadUser={this.loadUser}
+              user={user}
+            />
+          </Modal> 
+        }
         { route === 'home'
           ? <div>
               <Logo />
